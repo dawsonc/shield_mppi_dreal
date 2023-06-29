@@ -14,7 +14,7 @@ where L is the length of the car.
 The CBF is given by h(q) = w^2 - y^2, where w is half the width of the track.
 
 We define one discrete time step by integrating the continuous-time dynamics for
-0.1 seconds with 0.025 second substeps and a forward Euler integration scheme.
+multiple substeps with a forward Euler integration scheme.
 """
 import time
 from itertools import product
@@ -28,10 +28,10 @@ def check_feasibility(state, tolerance=1e-3):
     # Define constants
     L = 1.0  # length of car
     w = 2.0  # half-width of track
-    dt = 0.025  # substep size
+    dt = 0.1  # substep size
     N_substeps = 4  # number of substeps per time step
-    delta_limit = 0.5  # maximum steering angle
-    accel_limit = 1.0  # maximum acceleration
+    delta_limit = np.pi / 4  # maximum steering angle
+    accel_limit = 3.0  # maximum acceleration
 
     # Define variables
     ## State variables (one initial state + N_substeps future states)
@@ -81,7 +81,7 @@ def check_feasibility(state, tolerance=1e-3):
     constraints.append(cbf_alpha >= 1e-3)
     constraints.append(cbf_alpha <= 1.0 - 1e-3)
     ### CBF constraint
-    cbf_condition = h_next - h_now >= -cbf_alpha * h_now
+    constraints.append(h_next - h_now >= -cbf_alpha * h_now)
 
     # Define the problem and solve
     problem = dr.And(*constraints)
@@ -92,8 +92,8 @@ def check_feasibility(state, tolerance=1e-3):
 
 if __name__ == "__main__":
     # Define the domain to search over
-    grid_spacing = 0.01
-    y_min, y_max = -2.0, 2.0
+    grid_spacing = 0.05
+    y_min, y_max = 0.0, 2.0  # reflection symmetry about y = 0
     theta_min, theta_max = -np.pi / 4.0, np.pi / 4.0
     v_min, v_max = 5.0, 10.0
     y = np.arange(y_min, y_max + grid_spacing, grid_spacing)
@@ -107,7 +107,7 @@ if __name__ == "__main__":
     expected_total = len(x) * len(y) * len(theta) * len(v)
     pbar = tqdm(product(x, y, theta, v), total=expected_total)
     for state in pbar:
-        result = check_feasibility(state)
+        result = check_feasibility(state, tolerance=grid_spacing)
         num_states += 1
         if result:
             num_feasible += 1
