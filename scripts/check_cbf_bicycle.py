@@ -39,9 +39,11 @@ def check_feasibility(state, tolerance=1e-3):
     ys = [dr.Variable(f"y_{i}") for i in range(N_substeps + 1)]
     thetas = [dr.Variable(f"theta_{i}") for i in range(N_substeps + 1)]
     vs = [dr.Variable(f"v_{i}") for i in range(N_substeps + 1)]
-    ## Control variables (one control input per substep)
-    deltas = [dr.Variable(f"delta_{i}") for i in range(N_substeps)]
-    accels = [dr.Variable(f"accel_{i}") for i in range(N_substeps)]
+    ## Control variables (one control input for all substeps)
+    # deltas = [dr.Variable(f"delta_{i}") for i in range(N_substeps)]
+    # accels = [dr.Variable(f"accel_{i}") for i in range(N_substeps)]
+    delta = dr.Variable("delta")
+    accel = dr.Variable("accel")
     ## Initial and next CBF values
     h_now = dr.Variable("h_now")
     h_next = dr.Variable("h_next")
@@ -60,17 +62,19 @@ def check_feasibility(state, tolerance=1e-3):
     for i in range(N_substeps):
         constraints.append(xs[i + 1] == xs[i] + dt * vs[i] * dr.cos(thetas[i]))
         constraints.append(ys[i + 1] == ys[i] + dt * vs[i] * dr.sin(thetas[i]))
-        constraints.append(
-            thetas[i + 1] == thetas[i] + dt * vs[i] * dr.tan(deltas[i]) / L
-        )
-        constraints.append(vs[i + 1] == vs[i] + dt * accels[i])
+        constraints.append(thetas[i + 1] == thetas[i] + dt * vs[i] * dr.tan(delta) / L)
+        constraints.append(vs[i + 1] == vs[i] + dt * accel)
 
     ## Control limits
-    for i in range(N_substeps):
-        constraints.append(deltas[i] >= -delta_limit)
-        constraints.append(deltas[i] <= delta_limit)
-        constraints.append(accels[i] >= -accel_limit)
-        constraints.append(accels[i] <= accel_limit)
+    # for i in range(N_substeps):
+    #     constraints.append(deltas[i] >= -delta_limit)
+    #     constraints.append(deltas[i] <= delta_limit)
+    #     constraints.append(accels[i] >= -accel_limit)
+    #     constraints.append(accels[i] <= accel_limit)
+    constraints.append(delta >= -delta_limit)
+    constraints.append(delta <= delta_limit)
+    constraints.append(accel >= -accel_limit)
+    constraints.append(accel <= accel_limit)
 
     ## CBF
     ### Initial CBF value
